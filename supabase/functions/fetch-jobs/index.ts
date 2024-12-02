@@ -13,7 +13,7 @@ serve(async (req) => {
 
   try {
     const { keywords, location } = await req.json()
-    const findworkApiKey = Deno.env.get('FINDWORK_API_KEY')
+    const linkedinApiKey = Deno.env.get('default-application_9907702')
     
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -31,31 +31,37 @@ serve(async (req) => {
       )
     }
 
-    // Fetch from Findwork API
-    const findworkResponse = await fetch('https://findwork.dev/api/jobs/', {
-      headers: {
-        'Authorization': `Token ${findworkApiKey}`,
-      },
-    })
+    console.log('Fetching jobs with keywords:', keywords, 'and location:', location)
 
-    if (!findworkResponse.ok) {
-      console.error('Findwork API error:', await findworkResponse.text())
-      throw new Error('Failed to fetch from Findwork API')
+    // Fetch from LinkedIn Data Scraper API
+    const linkedinResponse = await fetch(
+      `https://linkedin-data-scraper.p.rapidapi.com/profile_updates_original?profile_url=https%3A%2F%2Fwww.linkedin.com%2Fin%2F${encodeURIComponent(keywords)}&page=1&reposts=1&comments=1`,
+      {
+        headers: {
+          'x-rapidapi-key': linkedinApiKey,
+          'x-rapidapi-host': 'linkedin-data-scraper.p.rapidapi.com',
+        },
+      }
+    )
+
+    if (!linkedinResponse.ok) {
+      console.error('LinkedIn API error:', await linkedinResponse.text())
+      throw new Error('Failed to fetch from LinkedIn API')
     }
 
-    const findworkJobs = await findworkResponse.json()
-    console.log('Fetched jobs from Findwork:', findworkJobs)
+    const linkedinData = await linkedinResponse.json()
+    console.log('Fetched data from LinkedIn:', linkedinData)
 
-    // Transform Findwork jobs to our schema
-    const transformedJobs = findworkJobs.results.map(job => ({
-      title: job.role,
-      company: job.company_name,
-      location: job.location || 'Remote',
-      description: job.text,
-      salary_range: job.salary || null,
-      job_type: job.employment_type || 'Full-time',
-      url: job.url,
-      source: 'Findwork',
+    // Transform LinkedIn data to our schema
+    const transformedJobs = linkedinData.map(post => ({
+      title: post.title || 'Job Position',
+      company: post.company || 'Company Name',
+      location: location || post.location || 'Remote',
+      description: post.content || post.description || 'No description available',
+      salary_range: null,
+      job_type: 'Full-time',
+      url: post.url || null,
+      source: 'LinkedIn',
       user_id: user.id,
     }))
 
