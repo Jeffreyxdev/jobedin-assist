@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { BriefcaseIcon, Crown, LogOut } from "lucide-react";
+import { BriefcaseIcon, Crown, LogOut, Bookmark } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -20,10 +20,25 @@ export const Navbar = () => {
   return (
     <nav className="border-b">
       <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
-          <BriefcaseIcon className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold text-primary">Jobedin</span>
-        </Link>
+        <div className="flex items-center space-x-6">
+          <Link to="/" className="flex items-center space-x-2">
+            <BriefcaseIcon className="h-6 w-6 text-primary" />
+            <span className="text-xl font-bold text-primary">Jobedin</span>
+          </Link>
+          <Link
+            to="/applications"
+            className="text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            Applications
+          </Link>
+          <Link
+            to="/saved-jobs"
+            className="text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-1"
+          >
+            <Bookmark className="h-4 w-4" />
+            <span>Saved Jobs</span>
+          </Link>
+        </div>
         <div className="flex items-center space-x-4">
           <Button
             variant="ghost"

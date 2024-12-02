@@ -1,4 +1,3 @@
-import { AIJobSearch } from "@/components/AIJobSearch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -9,7 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Loader2, BookmarkPlus, Eye } from "lucide-react";
+import { Loader2, Trash2, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -20,16 +19,19 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
-const Applications = () => {
+const SavedJobs = () => {
   const [selectedJob, setSelectedJob] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: jobs, isLoading } = useQuery({
-    queryKey: ["jobs"],
+  const { data: savedJobs, isLoading } = useQuery({
+    queryKey: ["saved-jobs"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("jobs")
-        .select("*")
+        .from("saved_jobs")
+        .select(`
+          *,
+          jobs:job_id (*)
+        `)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -37,31 +39,27 @@ const Applications = () => {
     },
   });
 
-  const saveJobMutation = useMutation({
-    mutationFn: async (jobId) => {
+  const deleteSavedJobMutation = useMutation({
+    mutationFn: async (id) => {
       const { error } = await supabase
         .from("saved_jobs")
-        .insert({ job_id: jobId });
+        .delete()
+        .eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Job saved successfully");
+      toast.success("Job removed from saved");
       queryClient.invalidateQueries({ queryKey: ["saved-jobs"] });
     },
     onError: () => {
-      toast.error("Failed to save job");
+      toast.error("Failed to remove job");
     },
   });
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-8">
-        <h1 className="text-2xl font-bold mb-8">Job Applications</h1>
-        
-        {/* AI Job Search */}
-        <div className="mb-8">
-          <AIJobSearch />
-        </div>
+        <h1 className="text-2xl font-bold mb-8">Saved Jobs</h1>
 
         {/* Jobs Table */}
         <div className="bg-white rounded-lg shadow">
@@ -83,35 +81,37 @@ const Applications = () => {
                     <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
-              ) : jobs?.length === 0 ? (
+              ) : savedJobs?.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
-                    No jobs found. Try using the AI Job Search above!
+                    No saved jobs yet. Browse the Applications page to save jobs!
                   </TableCell>
                 </TableRow>
               ) : (
-                jobs?.map((job) => (
-                  <TableRow key={job.id}>
-                    <TableCell className="font-medium">{job.title}</TableCell>
-                    <TableCell>{job.company}</TableCell>
-                    <TableCell>{job.location}</TableCell>
-                    <TableCell>{job.job_type}</TableCell>
-                    <TableCell>{job.salary_range}</TableCell>
+                savedJobs?.map((savedJob) => (
+                  <TableRow key={savedJob.id}>
+                    <TableCell className="font-medium">
+                      {savedJob.jobs.title}
+                    </TableCell>
+                    <TableCell>{savedJob.jobs.company}</TableCell>
+                    <TableCell>{savedJob.jobs.location}</TableCell>
+                    <TableCell>{savedJob.jobs.job_type}</TableCell>
+                    <TableCell>{savedJob.jobs.salary_range}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setSelectedJob(job)}
+                          onClick={() => setSelectedJob(savedJob.jobs)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => saveJobMutation.mutate(job.id)}
+                          onClick={() => deleteSavedJobMutation.mutate(savedJob.id)}
                         >
-                          <BookmarkPlus className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </TableCell>
@@ -157,4 +157,4 @@ const Applications = () => {
   );
 };
 
-export default Applications;
+export default SavedJobs;

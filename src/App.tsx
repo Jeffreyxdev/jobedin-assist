@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
+import SavedJobs from "./pages/SavedJobs";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Applications />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/saved-jobs"
+            element={
+              <ProtectedRoute>
+                <SavedJobs />
               </ProtectedRoute>
             }
           />
