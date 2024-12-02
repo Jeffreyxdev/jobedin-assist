@@ -1,8 +1,26 @@
 import { LayoutDashboard, Grid2X2, Columns3 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AIJobSearch } from "@/components/AIJobSearch";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
+  const { data: jobs } = useQuery({
+    queryKey: ["jobs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("jobs")
+        .select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Calculate statistics
+  const totalApplications = jobs?.length || 0;
+  const interviewsScheduled = 0; // This would need to be implemented with a proper interviews tracking system
+  const responseRate = totalApplications > 0 ? Math.round((interviewsScheduled / totalApplications) * 100) : 0;
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="flex">
@@ -13,20 +31,20 @@ const Dashboard = () => {
             <span className="font-semibold text-lg">Jobedin</span>
           </div>
           <nav className="space-y-2">
-            <a
-              href="#"
+            <Link
+              to="/"
               className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
             >
               <Grid2X2 className="h-5 w-5" />
               <span>Dashboard</span>
-            </a>
-            <a
-              href="#"
+            </Link>
+            <Link
+              to="/applications"
               className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <Columns3 className="h-5 w-5" />
               <span>Applications</span>
-            </a>
+            </Link>
           </nav>
         </aside>
 
@@ -34,11 +52,6 @@ const Dashboard = () => {
         <main className="flex-1 p-8">
           <div className="max-w-7xl mx-auto">
             <h1 className="text-2xl font-bold mb-8">Dashboard</h1>
-            
-            {/* AI Job Search */}
-            <div className="mb-8">
-              <AIJobSearch />
-            </div>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -50,9 +63,9 @@ const Dashboard = () => {
                   <Grid2X2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
+                  <div className="text-2xl font-bold">{totalApplications}</div>
                   <p className="text-xs text-muted-foreground">
-                    +2 from last week
+                    From AI Job Search
                   </p>
                 </CardContent>
               </Card>
@@ -64,9 +77,9 @@ const Dashboard = () => {
                   <Grid2X2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">3</div>
+                  <div className="text-2xl font-bold">{interviewsScheduled}</div>
                   <p className="text-xs text-muted-foreground">
-                    Next interview in 2 days
+                    Pending implementation
                   </p>
                 </CardContent>
               </Card>
@@ -78,9 +91,9 @@ const Dashboard = () => {
                   <Grid2X2 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">25%</div>
+                  <div className="text-2xl font-bold">{responseRate}%</div>
                   <p className="text-xs text-muted-foreground">
-                    +5% from last month
+                    Based on interviews scheduled
                   </p>
                 </CardContent>
               </Card>
@@ -93,19 +106,19 @@ const Dashboard = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
+                  {jobs?.slice(0, 3).map((job) => (
                     <div
-                      key={i}
+                      key={job.id}
                       className="flex items-center justify-between p-4 border rounded-lg"
                     >
                       <div>
-                        <h3 className="font-medium">Software Engineer</h3>
+                        <h3 className="font-medium">{job.title}</h3>
                         <p className="text-sm text-muted-foreground">
-                          Tech Company {i}
+                          {job.company}
                         </p>
                       </div>
                       <span className="text-sm text-muted-foreground">
-                        2 days ago
+                        {new Date(job.created_at).toLocaleDateString()}
                       </span>
                     </div>
                   ))}
