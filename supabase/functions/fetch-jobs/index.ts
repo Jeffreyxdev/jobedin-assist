@@ -6,6 +6,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+const linkedinApiKey = Deno.env.get('default-application_9907702') || '';
+
+if (!supabaseUrl || !supabaseKey || !linkedinApiKey) {
+  throw new Error('Missing environment variables');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -13,11 +21,8 @@ serve(async (req) => {
 
   try {
     const { keywords, location } = await req.json()
-    const linkedinApiKey = Deno.env.get('default-application_9907702')
     
     // Create Supabase client
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     const supabase = createClient(supabaseUrl, supabaseKey)
     
     // Get user ID from auth header
