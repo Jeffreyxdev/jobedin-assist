@@ -13,18 +13,6 @@ serve(async (req) => {
 
   try {
     const { keywords, location } = await req.json()
-    const rapidApiKey = Deno.env.get('RAPIDAPI_KEY')
-    
-    // Fetch from RapidAPI
-    const rapidApiUrl = `https://jobs-api14.p.rapidapi.com/v2/list?query=${encodeURIComponent(keywords)}&location=${encodeURIComponent(location || 'United States')}`
-    const rapidApiResponse = await fetch(rapidApiUrl, {
-      headers: {
-        'x-rapidapi-key': rapidApiKey,
-        'x-rapidapi-host': 'jobs-api14.p.rapidapi.com',
-      },
-    })
-    
-    const rapidApiJobs = await rapidApiResponse.json()
     
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -42,23 +30,25 @@ serve(async (req) => {
       )
     }
 
-    // Transform and store RapidAPI jobs
-    const transformedJobs = rapidApiJobs.data.map(job => ({
-      title: job.job_title,
-      company: job.employer_name,
-      location: job.job_city + ', ' + job.job_country,
-      description: job.job_description,
-      salary_range: job.job_min_salary ? `$${job.job_min_salary} - $${job.job_max_salary}` : null,
-      job_type: job.job_employment_type,
-      url: job.job_apply_link,
-      source: 'RapidAPI',
-      user_id: user.id,
-    }))
+    // Mock job data for demonstration
+    const mockJobs = [
+      {
+        title: keywords,
+        company: "Example Company",
+        location: location || "Remote",
+        description: "This is a sample job description.",
+        salary_range: "$50,000 - $100,000",
+        job_type: "Full-time",
+        url: "https://example.com/job",
+        source: "Internal",
+        user_id: user.id,
+      }
+    ]
 
     // Insert jobs into Supabase
     const { data: insertedJobs, error } = await supabase
       .from('jobs')
-      .insert(transformedJobs)
+      .insert(mockJobs)
       .select()
 
     if (error) throw error
