@@ -13,6 +13,7 @@ serve(async (req) => {
 
   try {
     const { keywords, location } = await req.json()
+    const findworkApiKey = Deno.env.get('FINDWORK_API_KEY')
     
     // Create Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
@@ -30,25 +31,38 @@ serve(async (req) => {
       )
     }
 
-    // Mock job data for demonstration
-    const mockJobs = [
-      {
-        title: keywords,
-        company: "Example Company",
-        location: location || "Remote",
-        description: "This is a sample job description.",
-        salary_range: "$50,000 - $100,000",
-        job_type: "Full-time",
-        url: "https://example.com/job",
-        source: "Internal",
-        user_id: user.id,
-      }
-    ]
+    // Fetch from Findwork API
+    const findworkResponse = await fetch('https://findwork.dev/api/jobs/', {
+      headers: {
+        'Authorization': `Token ${findworkApiKey}`,
+      },
+    })
+
+    if (!findworkResponse.ok) {
+      console.error('Findwork API error:', await findworkResponse.text())
+      throw new Error('Failed to fetch from Findwork API')
+    }
+
+    const findworkJobs = await findworkResponse.json()
+    console.log('Fetched jobs from Findwork:', findworkJobs)
+
+    // Transform Findwork jobs to our schema
+    const transformedJobs = findworkJobs.results.map(job => ({
+      title: job.role,
+      company: job.company_name,
+      location: job.location || 'Remote',
+      description: job.text,
+      salary_range: job.salary || null,
+      job_type: job.employment_type || 'Full-time',
+      url: job.url,
+      source: 'Findwork',
+      user_id: user.id,
+    }))
 
     // Insert jobs into Supabase
     const { data: insertedJobs, error } = await supabase
       .from('jobs')
-      .insert(mockJobs)
+      .insert(transformedJobs)
       .select()
 
     if (error) throw error
