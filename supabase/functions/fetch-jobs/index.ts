@@ -1,4 +1,4 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -6,96 +6,72 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const mockCompanies = [
-  'TechCorp', 'InnovateSoft', 'DevHub', 'CloudScale', 'DataFlow',
-  'AIVentures', 'CyberSys', 'QuantumTech', 'ByteLogic', 'NetSphere'
-]
-
-const mockLocations = [
-  'San Francisco, CA', 'New York, NY', 'Austin, TX', 'Seattle, WA',
-  'Boston, MA', 'Los Angeles, CA', 'Chicago, IL', 'Denver, CO'
-]
-
-const mockJobTypes = ['Full-time', 'Part-time', 'Contract', 'Remote']
-
-const mockSalaryRanges = [
-  '$80,000 - $120,000', '$100,000 - $150,000', '$120,000 - $180,000',
-  '$150,000 - $200,000', '$200,000 - $250,000'
-]
-
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
     const { keywords, location } = await req.json()
+    const rapidApiKey = Deno.env.get('RAPIDAPI_KEY')
     
-    // Get auth token from request header
-    const authHeader = req.headers.get('Authorization')!
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: { headers: { Authorization: authHeader } },
-      }
-    )
-
-    // Get user ID from session
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser()
-
+    // Fetch from RapidAPI
+    const rapidApiUrl = `https://jobs-api14.p.rapidapi.com/v2/list?query=${encodeURIComponent(keywords)}&location=${encodeURIComponent(location || 'United States')}`
+    const rapidApiResponse = await fetch(rapidApiUrl, {
+      headers: {
+        'x-rapidapi-key': rapidApiKey,
+        'x-rapidapi-host': 'jobs-api14.p.rapidapi.com',
+      },
+    })
+    
+    const rapidApiJobs = await rapidApiResponse.json()
+    
+    // Create Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    
+    // Get user ID from auth header
+    const authHeader = req.headers.get('Authorization')?.split(' ')[1]
+    const { data: { user } } = await supabase.auth.getUser(authHeader)
+    
     if (!user) {
-      throw new Error('Not authenticated')
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
-    // Generate 5-10 mock job listings based on keywords
-    const numJobs = Math.floor(Math.random() * 6) + 5
-    const jobs = []
+    // Transform and store RapidAPI jobs
+    const transformedJobs = rapidApiJobs.data.map(job => ({
+      title: job.job_title,
+      company: job.employer_name,
+      location: job.job_city + ', ' + job.job_country,
+      description: job.job_description,
+      salary_range: job.job_min_salary ? `$${job.job_min_salary} - $${job.job_max_salary}` : null,
+      job_type: job.job_employment_type,
+      url: job.job_apply_link,
+      source: 'RapidAPI',
+      user_id: user.id,
+    }))
 
-    for (let i = 0; i < numJobs; i++) {
-      const job = {
-        title: `${keywords.split(' ').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')}`,
-        company: mockCompanies[Math.floor(Math.random() * mockCompanies.length)],
-        location: location || mockLocations[Math.floor(Math.random() * mockLocations.length)],
-        description: `We are seeking a talented ${keywords} to join our team. The ideal candidate will have strong experience in ${keywords} and related technologies.`,
-        salary_range: mockSalaryRanges[Math.floor(Math.random() * mockSalaryRanges.length)],
-        job_type: mockJobTypes[Math.floor(Math.random() * mockJobTypes.length)],
-        url: `https://example.com/jobs/${Math.random().toString(36).substring(7)}`,
-        source: 'Mock Data',
-        user_id: user.id
-      }
-      
-      // Insert job into database
-      const { error: insertError } = await supabaseClient
-        .from('jobs')
-        .insert(job)
+    // Insert jobs into Supabase
+    const { data: insertedJobs, error } = await supabase
+      .from('jobs')
+      .insert(transformedJobs)
+      .select()
 
-      if (insertError) {
-        console.error('Error inserting job:', insertError)
-        continue
-      }
-
-      jobs.push(job)
-    }
+    if (error) throw error
 
     return new Response(
-      JSON.stringify({ jobs }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
+      JSON.stringify({ success: true, jobs: insertedJobs }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   } catch (error) {
-    console.error('Error:', error.message)
+    console.error('Error:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 400,
-      }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
   }
 })

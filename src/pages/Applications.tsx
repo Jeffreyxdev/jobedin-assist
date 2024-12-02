@@ -19,9 +19,12 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Database } from "@/integrations/supabase/types";
+
+type Job = Database['public']['Tables']['jobs']['Row'];
 
 const Applications = () => {
-  const [selectedJob, setSelectedJob] = useState(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const queryClient = useQueryClient();
 
   const { data: jobs, isLoading } = useQuery({
@@ -38,10 +41,16 @@ const Applications = () => {
   });
 
   const saveJobMutation = useMutation({
-    mutationFn: async (jobId) => {
+    mutationFn: async (jobId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { error } = await supabase
         .from("saved_jobs")
-        .insert({ job_id: jobId });
+        .insert({ 
+          job_id: jobId,
+          user_id: user.id 
+        });
       if (error) throw error;
     },
     onSuccess: () => {
@@ -58,12 +67,10 @@ const Applications = () => {
       <div className="max-w-7xl mx-auto p-8">
         <h1 className="text-2xl font-bold mb-8">Job Applications</h1>
         
-        {/* AI Job Search */}
         <div className="mb-8">
           <AIJobSearch />
         </div>
 
-        {/* Jobs Table */}
         <div className="bg-white rounded-lg shadow">
           <Table>
             <TableHeader>
@@ -122,7 +129,6 @@ const Applications = () => {
           </Table>
         </div>
 
-        {/* Job Description Dialog */}
         <Dialog open={!!selectedJob} onOpenChange={() => setSelectedJob(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -149,6 +155,16 @@ const Applications = () => {
                 <h3 className="font-semibold">Description</h3>
                 <p className="whitespace-pre-wrap">{selectedJob?.description}</p>
               </div>
+              {selectedJob?.url && (
+                <div>
+                  <Button
+                    onClick={() => window.open(selectedJob.url, '_blank')}
+                    className="w-full"
+                  >
+                    Apply Now
+                  </Button>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>

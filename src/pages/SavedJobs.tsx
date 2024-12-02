@@ -18,37 +18,48 @@ import {
 } from "@/components/ui/dialog";
 import { useState } from "react";
 import { toast } from "sonner";
+import { Database } from "@/integrations/supabase/types";
+
+type Job = Database['public']['Tables']['jobs']['Row'];
 
 const SavedJobs = () => {
-  const [selectedJob, setSelectedJob] = useState(null);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const queryClient = useQueryClient();
 
   const { data: savedJobs, isLoading } = useQuery({
     queryKey: ["saved-jobs"],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { data, error } = await supabase
         .from("saved_jobs")
         .select(`
-          *,
-          jobs:job_id (*)
+          job_id,
+          jobs (*)
         `)
-        .order("created_at", { ascending: false });
+        .eq('user_id', user.id);
 
       if (error) throw error;
-      return data;
+      return data.map(item => item.jobs);
     },
   });
 
-  const deleteSavedJobMutation = useMutation({
-    mutationFn: async (id) => {
+  const deleteJobMutation = useMutation({
+    mutationFn: async (jobId: string) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
       const { error } = await supabase
         .from("saved_jobs")
         .delete()
-        .eq("id", id);
+        .eq('job_id', jobId)
+        .eq('user_id', user.id);
+
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Job removed from saved");
+      toast.success("Job removed from saved jobs");
       queryClient.invalidateQueries({ queryKey: ["saved-jobs"] });
     },
     onError: () => {
@@ -61,7 +72,6 @@ const SavedJobs = () => {
       <div className="max-w-7xl mx-auto p-8">
         <h1 className="text-2xl font-bold mb-8">Saved Jobs</h1>
 
-        {/* Jobs Table */}
         <div className="bg-white rounded-lg shadow">
           <Table>
             <TableHeader>
@@ -81,35 +91,33 @@ const SavedJobs = () => {
                     <Loader2 className="w-6 h-6 animate-spin mx-auto" />
                   </TableCell>
                 </TableRow>
-              ) : savedJobs?.length === 0 ? (
+              ) : !savedJobs || savedJobs.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center py-8">
-                    No saved jobs yet. Browse the Applications page to save jobs!
+                    No saved jobs found.
                   </TableCell>
                 </TableRow>
               ) : (
-                savedJobs?.map((savedJob) => (
-                  <TableRow key={savedJob.id}>
-                    <TableCell className="font-medium">
-                      {savedJob.jobs.title}
-                    </TableCell>
-                    <TableCell>{savedJob.jobs.company}</TableCell>
-                    <TableCell>{savedJob.jobs.location}</TableCell>
-                    <TableCell>{savedJob.jobs.job_type}</TableCell>
-                    <TableCell>{savedJob.jobs.salary_range}</TableCell>
+                savedJobs.map((job: Job) => (
+                  <TableRow key={job.id}>
+                    <TableCell className="font-medium">{job.title}</TableCell>
+                    <TableCell>{job.company}</TableCell>
+                    <TableCell>{job.location}</TableCell>
+                    <TableCell>{job.job_type}</TableCell>
+                    <TableCell>{job.salary_range}</TableCell>
                     <TableCell>
                       <div className="flex gap-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => setSelectedJob(savedJob.jobs)}
+                          onClick={() => setSelectedJob(job)}
                         >
                           <Eye className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => deleteSavedJobMutation.mutate(savedJob.id)}
+                          onClick={() => deleteJobMutation.mutate(job.id)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -122,7 +130,6 @@ const SavedJobs = () => {
           </Table>
         </div>
 
-        {/* Job Description Dialog */}
         <Dialog open={!!selectedJob} onOpenChange={() => setSelectedJob(null)}>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
@@ -149,6 +156,16 @@ const SavedJobs = () => {
                 <h3 className="font-semibold">Description</h3>
                 <p className="whitespace-pre-wrap">{selectedJob?.description}</p>
               </div>
+              {selectedJob?.url && (
+                <div>
+                  <Button
+                    onClick={() => window.open(selectedJob.url, '_blank')}
+                    className="w-full"
+                  >
+                    Apply Now
+                  </Button>
+                </div>
+              )}
             </div>
           </DialogContent>
         </Dialog>
