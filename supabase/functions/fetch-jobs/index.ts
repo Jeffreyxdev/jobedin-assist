@@ -52,18 +52,23 @@ serve(async (req) => {
     const linkedinData = await linkedinResponse.json()
     console.log('Fetched data from LinkedIn:', linkedinData)
 
-    // Transform LinkedIn data to our schema
-    const transformedJobs = linkedinData.map(post => ({
-      title: post.title || 'Job Position',
-      company: post.company || 'Company Name',
-      location: location || post.location || 'Remote',
-      description: post.content || post.description || 'No description available',
-      salary_range: null,
-      job_type: 'Full-time',
-      url: post.url || null,
-      source: 'LinkedIn',
-      user_id: user.id,
-    }))
+    // Transform LinkedIn posts to job listings
+    const transformedJobs = linkedinData.posts
+      .filter(post => post.postText.toLowerCase().includes('job') || 
+                     post.postText.toLowerCase().includes('hiring') || 
+                     post.postText.toLowerCase().includes('position') ||
+                     post.postText.toLowerCase().includes('career'))
+      .map(post => ({
+        title: extractJobTitle(post.postText) || 'Job Position',
+        company: post.actor?.actorName || 'Company Name',
+        location: location || extractLocation(post.postText) || 'Remote',
+        description: post.postText,
+        salary_range: null,
+        job_type: extractJobType(post.postText) || 'Full-time',
+        url: post.postLink || null,
+        source: 'LinkedIn',
+        user_id: user.id,
+      }))
 
     // Insert jobs into Supabase
     const { data: insertedJobs, error } = await supabase
@@ -85,3 +90,35 @@ serve(async (req) => {
     )
   }
 })
+
+// Helper functions to extract job information from post text
+function extractJobTitle(text: string): string | null {
+  const titlePatterns = [
+    /(?:hiring|looking for|seeking|wanted|open position|job opening|vacancy)[:\s]+([^.!?\n]+)/i,
+    /([^.!?\n]+(?:engineer|developer|manager|analyst|designer)[^.!?\n]+)/i,
+  ]
+
+  for (const pattern of titlePatterns) {
+    const match = text.match(pattern)
+    if (match?.[1]) return match[1].trim()
+  }
+  return null
+}
+
+function extractLocation(text: string): string | null {
+  const locationPattern = /(?:in|at|location|based in|remote from)\s+([A-Za-z\s,]+)/i
+  const match = text.match(locationPattern)
+  return match?.[1]?.trim() || null
+}
+
+function extractJobType(text: string): string | null {
+  const types = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship']
+  const lowercaseText = text.toLowerCase()
+  
+  for (const type of types) {
+    if (lowercaseText.includes(type.toLowerCase())) {
+      return type
+    }
+  }
+  return null
+}
