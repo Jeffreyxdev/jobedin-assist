@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import SavedJobs from "./pages/SavedJobs";
 import Profile from "./pages/Profile";
+import ChatBuilder from "./pages/ChatBuilder";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/chat-builder"
+            element={
+              <ProtectedRoute>
+                <ChatBuilder />
               </ProtectedRoute>
             }
           />
