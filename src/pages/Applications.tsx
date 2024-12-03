@@ -20,12 +20,14 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 import { Database } from "@/integrations/supabase/types";
+import { useSidebar } from "@/components/ui/sidebar";
 
 type Job = Database['public']['Tables']['jobs']['Row'];
 
 const Applications = () => {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const queryClient = useQueryClient();
+  const { toggleSidebar } = useSidebar();
 
   const { data: jobs, isLoading } = useQuery({
     queryKey: ["jobs"],
@@ -65,7 +67,12 @@ const Applications = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-8">
-        <h1 className="text-2xl font-bold mb-8">Job Applications</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl font-bold">Job Applications</h1>
+          <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+            <Eye className="h-4 w-4" />
+          </Button>
+        </div>
         
         <div className="mb-8">
           <AIJobSearch />
