@@ -1,4 +1,4 @@
-import { LayoutDashboard, Grid2X2, Columns3 } from "lucide-react";
+import { LayoutDashboard, Grid2X2, Columns3, Bookmark, LetterText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +45,21 @@ const Dashboard = () => {
               <Columns3 className="h-5 w-5" />
               <span>Applications</span>
             </Link>
+            <Link
+              to="/saved-jobs"
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <Bookmark className="h-5 w-5" />
+              <span>Saved Jobs</span>
+            </Link>
+            <Link
+              to="/yourchatbot"
+              className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <LetterText className="h-5 w-5" />
+              <span>Your resume Builder</span>
+            </Link>
+
           </nav>
         </aside>
 

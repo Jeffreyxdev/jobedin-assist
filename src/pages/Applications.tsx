@@ -1,6 +1,8 @@
 import { AIJobSearch } from "@/components/AIJobSearch";
+import { LayoutDashboard, Grid2X2, Columns3, Bookmark, LetterText } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { Link } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -63,6 +65,46 @@ const Applications = () => {
   });
 
   return (
+    <div className="min-h-screen bg-gray-50">
+    <div className="flex">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white border-r min-h-screen p-4">
+        <div className="flex items-center gap-2 mb-8">
+          <LayoutDashboard className="h-6 w-6 text-primary" />
+          <span className="font-semibold text-lg">Jobedin</span>
+        </div>
+        <nav className="space-y-2">
+          <Link
+            to="/"
+            className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+          >
+            <Grid2X2 className="h-5 w-5" />
+            <span>Dashboard</span>
+          </Link>
+          <Link
+            to="/applications"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Columns3 className="h-5 w-5" />
+            <span>Applications</span>
+          </Link>
+          <Link
+            to="/saved-jobs"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <Bookmark className="h-5 w-5" />
+            <span>Saved Jobs</span>
+          </Link>
+          <Link
+            to="/yourchatbot"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <LetterText className="h-5 w-5" />
+            <span>Your resume Builder</span>
+          </Link>
+
+        </nav>
+      </aside>
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto p-8">
         <h1 className="text-2xl font-bold mb-8">Job Applications</h1>
@@ -169,6 +211,8 @@ const Applications = () => {
           </DialogContent>
         </Dialog>
       </div>
+    </div>
+    </div>
     </div>
   );
 };

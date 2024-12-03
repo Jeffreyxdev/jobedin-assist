@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import SavedJobs from "./pages/SavedJobs";
+import Chatbot from "./pages/Chatbot";
 
 const queryClient = new QueryClient();
 
@@ -30,29 +31,24 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const App = () => (
+  
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route path="/" element={ <Index />}/>
+          <Route path="/login" element={<Login/>} />
           <Route
-            path="/"
+            path="/dash"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
             }
           />
-          <Route
-            path="/home"
-            element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            }
-          />
+          
           <Route
             path="/applications"
             element={
@@ -69,6 +65,14 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+        <Route
+        path="/yourchatbot"
+        element={
+          <ProtectedRoute>
+            <Chatbot/>
+          </ProtectedRoute>
+        }
+        />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

@@ -5,13 +5,22 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Loader2 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client"
+import axios from 'axios'
 
 export function AIJobSearch() {
+
+ 
+ 
   const [keywords, setKeywords] = useState("")
   const [location, setLocation] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
-
+  const params = {
+   
+    page: 1,
+    keywords,
+    location,
+};
   const handleSearch = async () => {
     if (!keywords) {
       toast({
@@ -25,32 +34,24 @@ export function AIJobSearch() {
     setIsLoading(true)
     try {
       const { data: { session } } = await supabase.auth.getSession()
-      const response = await fetch(
-        "https://moljurgujqtckraxfwby.supabase.co/functions/v1/fetch-jobs",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${session?.access_token}`,
-          },
-          body: JSON.stringify({ keywords, location }),
-        }
-      )
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch jobs")
-      }
-
-      toast({
-        title: "Jobs fetched successfully",
-        description: "Check your dashboard for the new job listings",
+      const responses =`https://api.scrapingdog.com/linkedinjobs`
+      axios.get(responses, { params })
+      .then(response => {
+          // Check if the request was successful (status code 200)
+          if (response.status === 200) {
+              // Access the response data
+              const data = response.data;
+              console.log(data);
+          } else {
+              console.log("Request failed with status code:", response.status);
+          }
       })
-    } catch (error) {
-      toast({
-        title: "Error fetching jobs",
-        description: error.message,
-        variant: "destructive",
-      })
+      .catch(error => {
+          console.error("An error occurred:", error);
+      });
+     
+    
+      
     } finally {
       setIsLoading(false)
     }

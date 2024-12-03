@@ -12,7 +12,7 @@ const Login = () => {
     // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        navigate("/dash");
       }
     });
 
