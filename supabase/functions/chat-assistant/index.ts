@@ -1,5 +1,5 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 const corsHeaders = {
@@ -41,6 +41,12 @@ serve(async (req) => {
       }),
     });
 
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('OpenAI API Error:', error);
+      throw new Error('Failed to get response from OpenAI');
+    }
+
     const data = await response.json();
     const aiResponse = data.choices[0].message.content;
 
@@ -57,7 +63,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in chat-assistant function:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
