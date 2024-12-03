@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Applications from "./pages/Applications";
 import SavedJobs from "./pages/SavedJobs";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <SavedJobs />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
               </ProtectedRoute>
             }
           />

@@ -9,7 +9,7 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "@/components/ui/sidebar";
-import { BriefcaseIcon, BookmarkIcon, FileTextIcon } from "lucide-react";
+import { BriefcaseIcon, BookmarkIcon, FileTextIcon, UserIcon } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const menuItems = [
@@ -27,6 +27,11 @@ const menuItems = [
     title: "Saved Jobs",
     icon: BookmarkIcon,
     href: "/saved-jobs",
+  },
+  {
+    title: "Profile",
+    icon: UserIcon,
+    href: "/profile",
   },
 ];
 
